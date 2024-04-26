@@ -45,9 +45,9 @@ def _new_ticker(message: telebot.types.Message):
 
 
 def _new_ticker_step1(message: telebot.types.Message):
-    if not re.match(r"[0-9]+?[.,][0-9]+", message.text):
+    if not re.match(r"[0-9]+?[.][0-9]+", message.text):
         m = bot.send_message(message.chat.id,
-                             "Формат ввода - число с плавающей точкой (10,3245 или 43.345). Попробуй еще.")
+                             "Формат ввода - число с плавающей точкой (43.345). Попробуй еще.")
         bot.register_next_step_handler(m, _new_ticker_step1)
 
     floor_value = float(message.text)
@@ -58,9 +58,9 @@ def _new_ticker_step1(message: telebot.types.Message):
 
 
 def _new_ticker_step2(message: telebot.types.Message):
-    if not re.match(r"[0-9]+?[.,][0-9]+", message.text):
+    if not re.match(r"[0-9]+?[.][0-9]+", message.text):
         m = bot.send_message(message.chat.id,
-                             "Формат ввода - число с плавающей точкой (10,3245 или 43.345). Попробуй еще.")
+                             "Формат ввода - число с плавающей точкой (43.345). Попробуй еще.")
         bot.register_next_step_handler(m, _new_ticker_step2)
 
     ceil_value = float(message.text)
