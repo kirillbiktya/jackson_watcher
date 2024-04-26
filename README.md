@@ -4,8 +4,11 @@
 
 Для начала необходимо установить rabbitmq:
 ```commandline
-sudo apt install rabbitmq-server
+sudo apt install rabbitmq-server python3-venv
 ```
+
+> [!NOTE]
+> Работать лучше в скрине или tmux, так бот не отвалится, если завершить сессию
 
 Склонировать репозиторий
 ```commandline
@@ -18,6 +21,12 @@ cd jackson_watcher
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+```
+
+Переименуйте файл `config_template.py` и внесите в него действительные ключи для доступа к API Telegram и Coinmarketcap
+```commandline
+mv config_template.py config.py
+nano config.py
 ```
 
 ## Запуск

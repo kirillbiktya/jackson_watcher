@@ -1,7 +1,7 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
-def inline_kb_constructor(buttons: list[dict], cols=3):
+def inline_kb_constructor(buttons: list, cols=3):
     """
 
     :param buttons: list of dicts like {"text": "...", "callback_data": "..."}
