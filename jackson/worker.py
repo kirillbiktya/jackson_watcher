@@ -48,11 +48,12 @@ def notify_user(user_id: int, ticker: dict, price: float):
     if ticker["floor_value"] > price:
         bot.send_message(user_id, "Цена на {} упала - текущий курс ${}".format(ticker["name"], price))
         db.query(Ticker).filter(Ticker.id == ticker["id"]).update({"latest_notify": datetime.now()})
+        db.commit()
     elif ticker["ceil_value"] < price:
         bot.send_message(user_id, "Цена на {} выросла - текущий курс ${}".format(ticker["name"], price))
-        db.query(Ticker).update({"latest_notify": datetime.now()})
+        db.query(Ticker).filter(Ticker.id == ticker["id"]).update({"latest_notify": datetime.now()})
+        db.commit()
     else:
         return
 
-    db.commit()
     return

@@ -81,8 +81,19 @@ def _new_ticker_step2(message: telebot.types.Message):
 
 @bot.message_handler(commands=["my_tickers"])
 def _my_tickers(message: telebot.types.Message):
-    # TODO: ticker management inline menu
-    pass
+    db = SessionLocal()
+    user_tickers = db.query(Ticker).filter(Ticker.owner_id == message.from_user.id).all()
+    if len(user_tickers) == 0:
+        bot.send_message(message.chat.id, "У тебя нет тикеров!")
+        return
+
+    data = [{
+        "text": "{}, ${}-${}".format(x.name, x.floor_value, x.ceil_value),
+        "callback_data": "my_tickers.select.{}".format(x.id)
+    } for x in user_tickers]
+
+    kb = inline_kb_constructor(data, cols=1)
+    bot.send_message(message.chat.id, "Твои активные тикеры:", reply_markup=kb)
 
 
 @bot.callback_query_handler(lambda call: call.data.startswith("new_ticker"))
@@ -92,6 +103,62 @@ def _new_ticker_handler(callback: telebot.types.CallbackQuery):
     name = data.split(".")[1]
     ticker_draft.update({str(callback.from_user.id): {"cmc_coin_id": cmc_coin_id, "name": name}})
     bot.edit_message_text("Выбран {}".format(name), callback.message.chat.id, callback.message.id)
-    m = bot.send_message(callback.message.chat.id, "Какая нижняя граница для курсв?")
+    m = bot.send_message(callback.message.chat.id, "Какая нижняя граница для курса?")
     bot.register_next_step_handler(m, _new_ticker_step1)
 
+
+@bot.callback_query_handler(lambda call: call.data.startswith("my_tickers"))
+def _my_tickers_handler(callback: telebot.types.CallbackQuery):
+    db = SessionLocal()
+    operation = callback.data.split(".")[1]
+    if operation == "back":
+        user_tickers = db.query(Ticker).filter(Ticker.owner_id == callback.from_user.id).all()
+        if len(user_tickers) == 0:
+            bot.edit_message_text("У тебя нет тикеров!", callback.message.chat.id, callback.message.id,
+                                  reply_markup=None)
+            return
+        data = [{
+            "text": "{}, ${}-${}".format(x.name, x.floor_value, x.ceil_value),
+            "callback_data": "my_tickers.select.{}".format(x.id)
+        } for x in user_tickers]
+
+        kb = inline_kb_constructor(data, cols=1)
+        bot.edit_message_text("Твои активные тикеры:", callback.message.chat.id, callback.message.id,
+                              reply_markup=kb)
+    elif operation == "select":
+        ticker_id = callback.data.split(".")[2]
+        ticker = db.query(Ticker).filter(Ticker.id == ticker_id).first()
+        if ticker is None:
+            bot.edit_message_text("Ошибка!", callback.message.chat.id, callback.message.id, reply_markup=None)
+            return
+
+        kb = inline_kb_constructor([{"text": "Удалить", "callback_data": "my_tickers.delete.{}".format(ticker_id)},
+                                    {"text": "Назад", "callback_data": "my_tickers.back"}])
+        bot.edit_message_text("Тикер на {}\n${} - ${}".format(ticker.name, ticker.floor_value, ticker.ceil_value),
+                              callback.message.chat.id, callback.message.id, reply_markup=kb)
+        return
+    elif operation == "delete":
+        ticker_id = callback.data.split(".")[2]
+        ticker = db.query(Ticker).filter(Ticker.id == ticker_id).first()
+        if ticker is None:
+            bot.edit_message_text("Ошибка!", callback.message.chat.id, callback.message.id, reply_markup=None)
+            return
+
+        db.delete(ticker)
+        db.commit()
+
+        bot.edit_message_text("Тикер удален!", callback.message.chat.id, callback.message.id, reply_markup=None)
+        user_tickers = db.query(Ticker).filter(Ticker.owner_id == callback.from_user.id).all()
+        if len(user_tickers) == 0:
+            bot.edit_message_text("У тебя нет тикеров!", callback.message.chat.id, callback.message.id,
+                                  reply_markup=None)
+            return
+        data = [{
+            "text": "{}, ${}-${}".format(x.name, x.floor_value, x.ceil_value),
+            "callback_data": "my_tickers.select.{}".format(x.id)
+        } for x in user_tickers]
+
+        kb = inline_kb_constructor(data, cols=1)
+        bot.edit_message_text("Твои активные тикеры:", callback.message.chat.id, callback.message.id,
+                              reply_markup=kb)
+        return
